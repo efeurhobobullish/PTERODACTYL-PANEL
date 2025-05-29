@@ -1,0 +1,43 @@
+version: '3.8'
+services:
+  database:
+    image: mariadb:10.5
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_PASSWORD: "pterodactyl"
+      MYSQL_ROOT_PASSWORD: "rootpassword"
+      MYSQL_DATABASE: "panel"
+      MYSQL_USER: "pterodactyl"
+    # Use local volume instead of host-mounted
+    volumes:
+      - database_data:/var/lib/mysql
+
+  cache:
+    image: redis:alpine
+    restart: always
+
+  panel:
+    image: ghcr.io/pterodactyl/panel:latest
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - database
+      - cache
+    environment:
+      APP_URL: "http://${CODESPACE_NAME}-80.preview.app.github.dev"
+      APP_TIMEZONE: "UTC"
+      DB_PASSWORD: "pterodactyl"
+      DB_HOST: "database"
+      DB_PORT: "3306"
+      REDIS_HOST: "cache"
+      # Disable HTTPS in Codespaces
+      APP_ENV: "development"
+      # Other required settings
+      CACHE_DRIVER: "redis"
+      SESSION_DRIVER: "redis"
+      QUEUE_DRIVER: "redis"
+
+volumes:
+  database_data:
